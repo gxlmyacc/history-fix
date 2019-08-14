@@ -113,6 +113,8 @@ function createHashHistory(props = {}) {
 
       ignorePath = null;
 
+      if (allPaths.length && allPaths[allPaths.length - 1] !== path) allPaths.push(path);
+
       handlePop(location);
     }
   }
