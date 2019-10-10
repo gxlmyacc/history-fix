@@ -22,35 +22,6 @@
     return _extends.apply(this, arguments);
   }
 
-  function warning(condition, message) {
-    {
-      if (condition) {
-        return;
-      }
-
-      var text = "Warning: " + message;
-
-      if (typeof console !== 'undefined') {
-        console.warn(text);
-      }
-
-      try {
-        throw Error(text);
-      } catch (x) {}
-    }
-  }
-
-  var prefix = 'Invariant failed';
-  function invariant(condition, message) {
-    if (condition) {
-      return;
-    }
-
-    {
-      throw new Error(prefix + ": " + (message || ''));
-    }
-  }
-
   function isAbsolute(pathname) {
     return pathname.charAt(0) === '/';
   }
@@ -65,11 +36,11 @@
   }
 
   // This implementation is based heavily on node's url.parse
-  function resolvePathname(to) {
-    var from = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+  function resolvePathname(to, from) {
+    if (from === undefined) from = '';
 
-    var toParts = to && to.split('/') || [];
-    var fromParts = from && from.split('/') || [];
+    var toParts = (to && to.split('/')) || [];
+    var fromParts = (from && from.split('/')) || [];
 
     var isToAbs = to && isAbsolute(to);
     var isFromAbs = from && isAbsolute(from);
@@ -86,7 +57,7 @@
 
     if (!fromParts.length) return '/';
 
-    var hasTrailingSlash = void 0;
+    var hasTrailingSlash;
     if (fromParts.length) {
       var last = fromParts[fromParts.length - 1];
       hasTrailingSlash = last === '.' || last === '..' || last === '';
@@ -109,9 +80,14 @@
       }
     }
 
-    if (!mustEndAbs) for (; up--; up) {
-      fromParts.unshift('..');
-    }if (mustEndAbs && fromParts[0] !== '' && (!fromParts[0] || !isAbsolute(fromParts[0]))) fromParts.unshift('');
+    if (!mustEndAbs) for (; up--; up) fromParts.unshift('..');
+
+    if (
+      mustEndAbs &&
+      fromParts[0] !== '' &&
+      (!fromParts[0] || !isAbsolute(fromParts[0]))
+    )
+      fromParts.unshift('');
 
     var result = fromParts.join('/');
 
@@ -120,36 +96,34 @@
     return result;
   }
 
-  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+  function valueOf(obj) {
+    return obj.valueOf ? obj.valueOf() : Object.prototype.valueOf.call(obj);
+  }
 
   function valueEqual(a, b) {
+    // Test for strict equality first.
     if (a === b) return true;
 
+    // Otherwise, if either of them == null they are not equal.
     if (a == null || b == null) return false;
 
     if (Array.isArray(a)) {
-      return Array.isArray(b) && a.length === b.length && a.every(function (item, index) {
-        return valueEqual(item, b[index]);
-      });
+      return (
+        Array.isArray(b) &&
+        a.length === b.length &&
+        a.every(function(item, index) {
+          return valueEqual(item, b[index]);
+        })
+      );
     }
 
-    var aType = typeof a === 'undefined' ? 'undefined' : _typeof(a);
-    var bType = typeof b === 'undefined' ? 'undefined' : _typeof(b);
-
-    if (aType !== bType) return false;
-
-    if (aType === 'object') {
-      var aValue = a.valueOf();
-      var bValue = b.valueOf();
+    if (typeof a === 'object' || typeof b === 'object') {
+      var aValue = valueOf(a);
+      var bValue = valueOf(b);
 
       if (aValue !== a || bValue !== b) return valueEqual(aValue, bValue);
 
-      var aKeys = Object.keys(a);
-      var bKeys = Object.keys(b);
-
-      if (aKeys.length !== bKeys.length) return false;
-
-      return aKeys.every(function (key) {
+      return Object.keys(Object.assign({}, a, b)).every(function(key) {
         return valueEqual(a[key], b[key]);
       });
     }
@@ -233,6 +207,16 @@
       if (state !== undefined && location.state === undefined) location.state = state;
     }
 
+    try {
+      location.pathname = decodeURI(location.pathname);
+    } catch (e) {
+      if (e instanceof URIError) {
+        throw new URIError('Pathname "' + location.pathname + '" could not be decoded. ' + 'This is likely caused by an invalid percent-encoding.');
+      } else {
+        throw e;
+      }
+    }
+
     if (key) location.key = key;
 
     if (currentLocation) {
@@ -253,6 +237,24 @@
   }
   function locationsAreEqual(a, b) {
     return a.pathname === b.pathname && a.search === b.search && a.hash === b.hash && a.key === b.key && valueEqual(a.state, b.state);
+  }
+
+  function warning(condition, message) {
+    {
+      if (condition) {
+        return;
+      }
+
+      var text = "Warning: " + message;
+
+      if (typeof console !== 'undefined') {
+        console.warn(text);
+      }
+
+      try {
+        throw Error(text);
+      } catch (x) {}
+    }
   }
 
   function createTransitionManager() {
@@ -365,6 +367,17 @@
 
   function isExtraneousPopstateEvent(event) {
     return event.state === undefined && navigator.userAgent.indexOf('CriOS') === -1;
+  }
+
+  var prefix = 'Invariant failed';
+  function invariant(condition, message) {
+    if (condition) {
+      return;
+    }
+
+    {
+      throw new Error(prefix + ": " + (message || ''));
+    }
   }
 
   var PopStateEvent = 'popstate';
@@ -649,6 +662,11 @@
     }
   };
 
+  function stripHash(url) {
+    var hashIndex = url.indexOf('#');
+    return hashIndex === -1 ? url : url.slice(0, hashIndex);
+  }
+
   function getHashPath() {
     // We can't use window.location.hash here because it's not
     // consistent across browsers - Firefox will pre-decode it!
@@ -662,8 +680,7 @@
   }
 
   function replaceHashPath(path) {
-    var hashIndex = window.location.href.indexOf('#');
-    window.location.replace(window.location.href.slice(0, hashIndex >= 0 ? hashIndex : 0) + '#' + path);
+    window.location.replace(stripHash(window.location.href) + '#' + path);
   }
 
   function createHashHistory(props) {
@@ -703,6 +720,10 @@
     var forceNextPop = false;
     var ignorePath = null;
 
+    function locationsAreEqual$$1(a, b) {
+      return a.pathname === b.pathname && a.search === b.search && a.hash === b.hash;
+    }
+
     function handleHashChange() {
       var path = getHashPath();
       var encodedPath = encodePath(path);
@@ -713,12 +734,14 @@
       } else {
         var location = getDOMLocation();
         var prevLocation = history.location;
-        if (!forceNextPop && locationsAreEqual(prevLocation, location)) return; // A hashchange doesn't always == location change.
+        if (!forceNextPop && locationsAreEqual$$1(prevLocation, location)) return; // A hashchange doesn't always == location change.
 
         if (ignorePath === createPath(location)) return; // Ignore this change; we already setState in push/replace.
 
         ignorePath = null;
+        
         if (allPaths.length && allPaths[allPaths.length - 1] !== path) allPaths.push(path);
+
         handlePop(location);
       }
     }
@@ -767,7 +790,14 @@
     var allPaths = [createPath(initialLocation)]; // Public interface
 
     function createHref(location) {
-      return '#' + encodePath(basename + createPath(location));
+      var baseTag = document.querySelector('base');
+      var href = '';
+
+      if (baseTag && baseTag.getAttribute('href')) {
+        href = stripHash(window.location.href);
+      }
+
+      return href + '#' + encodePath(basename + createPath(location));
     }
 
     function push(path, state) {

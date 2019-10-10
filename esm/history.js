@@ -11,7 +11,7 @@ function stripLeadingSlash(path) {
   return path.charAt(0) === '/' ? path.substr(1) : path;
 }
 function hasBasename(path, prefix) {
-  return new RegExp('^' + prefix + '(\\/|\\?|#|$)', 'i').test(path);
+  return path.toLowerCase().indexOf(prefix.toLowerCase()) === 0 && '/?#'.indexOf(path.charAt(prefix.length)) !== -1;
 }
 function stripBasename(path, prefix) {
   return hasBasename(path, prefix) ? path.substr(prefix.length) : path;
@@ -20,17 +20,17 @@ function stripTrailingSlash(path) {
   return path.charAt(path.length - 1) === '/' ? path.slice(0, -1) : path;
 }
 function parsePath(path) {
-  let pathname = path || '/';
-  let search = '';
-  let hash = '';
-  let hashIndex = pathname.indexOf('#');
+  var pathname = path || '/';
+  var search = '';
+  var hash = '';
+  var hashIndex = pathname.indexOf('#');
 
   if (hashIndex !== -1) {
     hash = pathname.substr(hashIndex);
     pathname = pathname.substr(0, hashIndex);
   }
 
-  let searchIndex = pathname.indexOf('?');
+  var searchIndex = pathname.indexOf('?');
 
   if (searchIndex !== -1) {
     search = pathname.substr(searchIndex);
@@ -38,23 +38,23 @@ function parsePath(path) {
   }
 
   return {
-    pathname,
+    pathname: pathname,
     search: search === '?' ? '' : search,
     hash: hash === '#' ? '' : hash
   };
 }
 function createPath(location) {
-  let pathname = location.pathname;
-  let search = location.search;
-  let hash = location.hash;
-  let path = pathname || '/';
-  if (search && search !== '?') path += search.charAt(0) === '?' ? search : '?' + search;
-  if (hash && hash !== '#') path += hash.charAt(0) === '#' ? hash : '#' + hash;
+  var pathname = location.pathname,
+      search = location.search,
+      hash = location.hash;
+  var path = pathname || '/';
+  if (search && search !== '?') path += search.charAt(0) === '?' ? search : "?" + search;
+  if (hash && hash !== '#') path += hash.charAt(0) === '#' ? hash : "#" + hash;
   return path;
 }
 
 function createLocation(path, state, key, currentLocation) {
-  let location;
+  var location;
 
   if (typeof path === 'string') {
     // Two-arg form: push(path, state)
@@ -113,10 +113,10 @@ function locationsAreEqual(a, b) {
 }
 
 function createTransitionManager() {
-  let prompt = null;
+  var prompt = null;
 
   function setPrompt(nextPrompt) {
-    process.env.NODE_ENV !== 'production' ? warning(prompt == null, 'A history supports only one prompt at a time') : void 0;
+    process.env.NODE_ENV !== "production" ? warning(prompt == null, 'A history supports only one prompt at a time') : void 0;
     prompt = nextPrompt;
     return function () {
       if (prompt === nextPrompt) prompt = null;
@@ -128,13 +128,13 @@ function createTransitionManager() {
     // the previous one, we may end up in a weird state. Figure out the
     // best way to handle this.
     if (prompt != null) {
-      let result = typeof prompt === 'function' ? prompt(location, action) : prompt;
+      var result = typeof prompt === 'function' ? prompt(location, action) : prompt;
 
       if (typeof result === 'string') {
         if (typeof getUserConfirmation === 'function') {
           getUserConfirmation(result, callback);
         } else {
-          process.env.NODE_ENV !== 'production' ? warning(false, 'A history needs a getUserConfirmation function in order to use a prompt message') : void 0;
+          process.env.NODE_ENV !== "production" ? warning(false, 'A history needs a getUserConfirmation function in order to use a prompt message') : void 0;
           callback(true);
         }
       } else {
@@ -146,10 +146,10 @@ function createTransitionManager() {
     }
   }
 
-  let listeners = [];
+  var listeners = [];
 
   function appendListener(fn) {
-    let isActive = true;
+    var isActive = true;
 
     function listener() {
       if (isActive) fn.apply(void 0, arguments);
@@ -175,14 +175,14 @@ function createTransitionManager() {
   }
 
   return {
-    setPrompt,
-    confirmTransitionTo,
-    appendListener,
-    notifyListeners
+    setPrompt: setPrompt,
+    confirmTransitionTo: confirmTransitionTo,
+    appendListener: appendListener,
+    notifyListeners: notifyListeners
   };
 }
 
-let canUseDOM = !!(typeof window !== 'undefined' && window.document && window.document.createElement);
+var canUseDOM = !!(typeof window !== 'undefined' && window.document && window.document.createElement);
 function getConfirmation(message, callback) {
   callback(window.confirm(message)); // eslint-disable-line no-alert
 }
@@ -195,7 +195,7 @@ function getConfirmation(message, callback) {
  */
 
 function supportsHistory() {
-  let ua = window.navigator.userAgent;
+  var ua = window.navigator.userAgent;
   if ((ua.indexOf('Android 2.') !== -1 || ua.indexOf('Android 4.0') !== -1) && ua.indexOf('Mobile Safari') !== -1 && ua.indexOf('Chrome') === -1 && ua.indexOf('Windows Phone') === -1) return false;
   return window.history && 'pushState' in window.history;
 }
@@ -221,11 +221,11 @@ function supportsGoWithoutReloadUsingHash() {
  */
 
 function isExtraneousPopstateEvent(event) {
-  event.state === undefined && navigator.userAgent.indexOf('CriOS') === -1;
+  return event.state === undefined && navigator.userAgent.indexOf('CriOS') === -1;
 }
 
-let PopStateEvent = 'popstate';
-let HashChangeEvent = 'hashchange';
+var PopStateEvent = 'popstate';
+var HashChangeEvent = 'hashchange';
 
 function getHistoryState() {
   try {
@@ -247,30 +247,30 @@ function createBrowserHistory(props) {
     props = {};
   }
 
-  !canUseDOM ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Browser history needs a DOM') : invariant(false) : void 0;
-  let globalHistory = window.history;
-  let canUseHistory = supportsHistory();
-  let needsHashChangeListener = !supportsPopStateOnHashChange();
-  let _props = props;
-  let _props$forceRefresh = _props.forceRefresh;
-  let forceRefresh = _props$forceRefresh === void 0 ? false : _props$forceRefresh;
-  let _props$getUserConfirm = _props.getUserConfirmation;
-  let getUserConfirmation = _props$getUserConfirm === void 0 ? getConfirmation : _props$getUserConfirm;
-  let _props$keyLength = _props.keyLength;
-  let keyLength = _props$keyLength === void 0 ? 6 : _props$keyLength;
-  let basename = props.basename ? stripTrailingSlash(addLeadingSlash(props.basename)) : '';
+  !canUseDOM ? process.env.NODE_ENV !== "production" ? invariant(false, 'Browser history needs a DOM') : invariant(false) : void 0;
+  var globalHistory = window.history;
+  var canUseHistory = supportsHistory();
+  var needsHashChangeListener = !supportsPopStateOnHashChange();
+  var _props = props,
+      _props$forceRefresh = _props.forceRefresh,
+      forceRefresh = _props$forceRefresh === void 0 ? false : _props$forceRefresh,
+      _props$getUserConfirm = _props.getUserConfirmation,
+      getUserConfirmation = _props$getUserConfirm === void 0 ? getConfirmation : _props$getUserConfirm,
+      _props$keyLength = _props.keyLength,
+      keyLength = _props$keyLength === void 0 ? 6 : _props$keyLength;
+  var basename = props.basename ? stripTrailingSlash(addLeadingSlash(props.basename)) : '';
 
   function getDOMLocation(historyState) {
-    let _ref = historyState || {};
-    let key = _ref.key;
-    let state = _ref.state;
+    var _ref = historyState || {},
+        key = _ref.key,
+        state = _ref.state;
 
-    let _window$location = window.location;
-    let pathname = _window$location.pathname;
-    let search = _window$location.search;
-    let hash = _window$location.hash;
-    let path = pathname + search + hash;
-    process.env.NODE_ENV !== 'production' ? warning(!basename || hasBasename(path, basename), 'You are attempting to use a basename on a page whose URL path does not begin ' + 'with the basename. Expected path "' + path + '" to begin with "' + basename + '".') : void 0;
+    var _window$location = window.location,
+        pathname = _window$location.pathname,
+        search = _window$location.search,
+        hash = _window$location.hash;
+    var path = pathname + search + hash;
+    process.env.NODE_ENV !== "production" ? warning(!basename || hasBasename(path, basename), 'You are attempting to use a basename on a page whose URL path does not begin ' + 'with the basename. Expected path "' + path + '" to begin with "' + basename + '".') : void 0;
     if (basename) path = stripBasename(path, basename);
     return createLocation(path, state, key);
   }
@@ -279,7 +279,7 @@ function createBrowserHistory(props) {
     return Math.random().toString(36).substr(2, keyLength);
   }
 
-  let transitionManager = createTransitionManager();
+  var transitionManager = createTransitionManager();
 
   function setState(nextState) {
     _extends(history, nextState);
@@ -298,19 +298,19 @@ function createBrowserHistory(props) {
     handlePop(getDOMLocation(getHistoryState()));
   }
 
-  let forceNextPop = false;
+  var forceNextPop = false;
 
   function handlePop(location) {
     if (forceNextPop) {
       forceNextPop = false;
       setState();
     } else {
-      let action = 'POP';
+      var action = 'POP';
       transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
         if (ok) {
           setState({
-            action,
-            location
+            action: action,
+            location: location
           });
         } else {
           revertPop(location);
@@ -320,15 +320,15 @@ function createBrowserHistory(props) {
   }
 
   function revertPop(fromLocation) {
-    let toLocation = history.location; // TODO: We could probably make this more reliable by
+    var toLocation = history.location; // TODO: We could probably make this more reliable by
     // keeping a list of keys we've seen in sessionStorage.
     // Instead, we just default to 0 for keys we don't know.
 
-    let toIndex = allKeys.indexOf(toLocation.key);
+    var toIndex = allKeys.indexOf(toLocation.key);
     if (toIndex === -1) toIndex = 0;
-    let fromIndex = allKeys.indexOf(fromLocation.key);
+    var fromIndex = allKeys.indexOf(fromLocation.key);
     if (fromIndex === -1) fromIndex = 0;
-    let delta = toIndex - fromIndex;
+    var delta = toIndex - fromIndex;
 
     if (delta) {
       forceNextPop = true;
@@ -336,7 +336,7 @@ function createBrowserHistory(props) {
     }
   }
 
-  let initialLocation = getDOMLocation(getHistoryState());
+  var initialLocation = getDOMLocation(getHistoryState());
   var allKeys = [initialLocation.key]; // Public interface
 
   function createHref(location) {
@@ -344,68 +344,68 @@ function createBrowserHistory(props) {
   }
 
   function push(path, state) {
-    process.env.NODE_ENV !== 'production' ? warning(!(typeof path === 'object' && path.state !== undefined && state !== undefined), 'You should avoid providing a 2nd state argument to push when the 1st ' + 'argument is a location-like object that already has state; it is ignored') : void 0;
-    let action = 'PUSH';
-    let location = createLocation(path, state, createKey(), history.location);
+    process.env.NODE_ENV !== "production" ? warning(!(typeof path === 'object' && path.state !== undefined && state !== undefined), 'You should avoid providing a 2nd state argument to push when the 1st ' + 'argument is a location-like object that already has state; it is ignored') : void 0;
+    var action = 'PUSH';
+    var location = createLocation(path, state, createKey(), history.location);
     transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
       if (!ok) return;
-      let href = createHref(location);
-      let key = location.key;
-      let state = location.state;
+      var href = createHref(location);
+      var key = location.key,
+          state = location.state;
 
       if (canUseHistory) {
         globalHistory.pushState({
-          key,
-          state
+          key: key,
+          state: state
         }, null, href);
 
         if (forceRefresh) {
           window.location.href = href;
         } else {
-          let prevIndex = allKeys.indexOf(history.location.key);
-          let nextKeys = allKeys.slice(0, prevIndex === -1 ? 0 : prevIndex + 1);
+          var prevIndex = allKeys.indexOf(history.location.key);
+          var nextKeys = allKeys.slice(0, prevIndex + 1);
           nextKeys.push(location.key);
           allKeys = nextKeys;
           setState({
-            action,
-            location
+            action: action,
+            location: location
           });
         }
       } else {
-        process.env.NODE_ENV !== 'production' ? warning(state === undefined, 'Browser history cannot push state in browsers that do not support HTML5 history') : void 0;
+        process.env.NODE_ENV !== "production" ? warning(state === undefined, 'Browser history cannot push state in browsers that do not support HTML5 history') : void 0;
         window.location.href = href;
       }
     });
   }
 
   function replace(path, state) {
-    process.env.NODE_ENV !== 'production' ? warning(!(typeof path === 'object' && path.state !== undefined && state !== undefined), 'You should avoid providing a 2nd state argument to replace when the 1st ' + 'argument is a location-like object that already has state; it is ignored') : void 0;
-    let action = 'REPLACE';
-    let location = createLocation(path, state, createKey(), history.location);
+    process.env.NODE_ENV !== "production" ? warning(!(typeof path === 'object' && path.state !== undefined && state !== undefined), 'You should avoid providing a 2nd state argument to replace when the 1st ' + 'argument is a location-like object that already has state; it is ignored') : void 0;
+    var action = 'REPLACE';
+    var location = createLocation(path, state, createKey(), history.location);
     transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
       if (!ok) return;
-      let href = createHref(location);
-      let key = location.key;
-      let state = location.state;
+      var href = createHref(location);
+      var key = location.key,
+          state = location.state;
 
       if (canUseHistory) {
         globalHistory.replaceState({
-          key,
-          state
+          key: key,
+          state: state
         }, null, href);
 
         if (forceRefresh) {
           window.location.replace(href);
         } else {
-          let prevIndex = allKeys.indexOf(history.location.key);
+          var prevIndex = allKeys.indexOf(history.location.key);
           if (prevIndex !== -1) allKeys[prevIndex] = location.key;
           setState({
-            action,
-            location
+            action: action,
+            location: location
           });
         }
       } else {
-        process.env.NODE_ENV !== 'production' ? warning(state === undefined, 'Browser history cannot replace state in browsers that do not support HTML5 history') : void 0;
+        process.env.NODE_ENV !== "production" ? warning(state === undefined, 'Browser history cannot replace state in browsers that do not support HTML5 history') : void 0;
         window.location.replace(href);
       }
     });
@@ -423,7 +423,7 @@ function createBrowserHistory(props) {
     go(1);
   }
 
-  let listenerCount = 0;
+  var listenerCount = 0;
 
   function checkDOMListeners(delta) {
     listenerCount += delta;
@@ -437,14 +437,14 @@ function createBrowserHistory(props) {
     }
   }
 
-  let isBlocked = false;
+  var isBlocked = false;
 
   function block(prompt) {
     if (prompt === void 0) {
       prompt = false;
     }
 
-    let unblock = transitionManager.setPrompt(prompt);
+    var unblock = transitionManager.setPrompt(prompt);
 
     if (!isBlocked) {
       checkDOMListeners(1);
@@ -462,7 +462,7 @@ function createBrowserHistory(props) {
   }
 
   function listen(listener) {
-    let unlisten = transitionManager.appendListener(listener);
+    var unlisten = transitionManager.appendListener(listener);
     checkDOMListeners(1);
     return function () {
       checkDOMListeners(-1);
@@ -474,20 +474,20 @@ function createBrowserHistory(props) {
     length: globalHistory.length,
     action: 'POP',
     location: initialLocation,
-    createHref,
-    push,
-    replace,
-    go,
-    goBack,
-    goForward,
-    block,
-    listen
+    createHref: createHref,
+    push: push,
+    replace: replace,
+    go: go,
+    goBack: goBack,
+    goForward: goForward,
+    block: block,
+    listen: listen
   };
   return history;
 }
 
-let HashChangeEvent$1 = 'hashchange';
-let HashPathCoders = {
+var HashChangeEvent$1 = 'hashchange';
+var HashPathCoders = {
   hashbang: {
     encodePath: function encodePath(path) {
       return path.charAt(0) === '!' ? path : '!/' + stripLeadingSlash(path);
@@ -506,11 +506,16 @@ let HashPathCoders = {
   }
 };
 
+function stripHash(url) {
+  var hashIndex = url.indexOf('#');
+  return hashIndex === -1 ? url : url.slice(0, hashIndex);
+}
+
 function getHashPath() {
   // We can't use window.location.hash here because it's not
   // consistent across browsers - Firefox will pre-decode it!
-  let href = window.location.href;
-  let hashIndex = href.indexOf('#');
+  var href = window.location.href;
+  var hashIndex = href.indexOf('#');
   return hashIndex === -1 ? '' : href.substring(hashIndex + 1);
 }
 
@@ -519,8 +524,7 @@ function pushHashPath(path) {
 }
 
 function replaceHashPath(path) {
-  let hashIndex = window.location.href.indexOf('#');
-  window.location.replace(window.location.href.slice(0, hashIndex >= 0 ? hashIndex : 0) + '#' + path);
+  window.location.replace(stripHash(window.location.href) + '#' + path);
 }
 
 function createHashHistory(props) {
@@ -528,27 +532,27 @@ function createHashHistory(props) {
     props = {};
   }
 
-  !canUseDOM ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Hash history needs a DOM') : invariant(false) : void 0;
-  let globalHistory = window.history;
-  let canGoWithoutReload = supportsGoWithoutReloadUsingHash();
-  let _props = props;
-  let _props$getUserConfirm = _props.getUserConfirmation;
-  let getUserConfirmation = _props$getUserConfirm === void 0 ? getConfirmation : _props$getUserConfirm;
-  let _props$hashType = _props.hashType;
-  let hashType = _props$hashType === void 0 ? 'slash' : _props$hashType;
-  let basename = props.basename ? stripTrailingSlash(addLeadingSlash(props.basename)) : '';
-  let _HashPathCoders$hashT = HashPathCoders[hashType];
-  let encodePath = _HashPathCoders$hashT.encodePath;
-  let decodePath = _HashPathCoders$hashT.decodePath;
+  !canUseDOM ? process.env.NODE_ENV !== "production" ? invariant(false, 'Hash history needs a DOM') : invariant(false) : void 0;
+  var globalHistory = window.history;
+  var canGoWithoutReload = supportsGoWithoutReloadUsingHash();
+  var _props = props,
+      _props$getUserConfirm = _props.getUserConfirmation,
+      getUserConfirmation = _props$getUserConfirm === void 0 ? getConfirmation : _props$getUserConfirm,
+      _props$hashType = _props.hashType,
+      hashType = _props$hashType === void 0 ? 'slash' : _props$hashType;
+  var basename = props.basename ? stripTrailingSlash(addLeadingSlash(props.basename)) : '';
+  var _HashPathCoders$hashT = HashPathCoders[hashType],
+      encodePath = _HashPathCoders$hashT.encodePath,
+      decodePath = _HashPathCoders$hashT.decodePath;
 
   function getDOMLocation() {
-    let path = decodePath(getHashPath());
-    process.env.NODE_ENV !== 'production' ? warning(!basename || hasBasename(path, basename), 'You are attempting to use a basename on a page whose URL path does not begin ' + 'with the basename. Expected path "' + path + '" to begin with "' + basename + '".') : void 0;
+    var path = decodePath(getHashPath());
+    process.env.NODE_ENV !== "production" ? warning(!basename || hasBasename(path, basename), 'You are attempting to use a basename on a page whose URL path does not begin ' + 'with the basename. Expected path "' + path + '" to begin with "' + basename + '".') : void 0;
     if (basename) path = stripBasename(path, basename);
     return createLocation(path);
   }
 
-  let transitionManager = createTransitionManager();
+  var transitionManager = createTransitionManager();
 
   function setState(nextState) {
     _extends(history, nextState);
@@ -557,26 +561,31 @@ function createHashHistory(props) {
     transitionManager.notifyListeners(history.location, history.action);
   }
 
-  let forceNextPop = false;
-  let ignorePath = null;
+  var forceNextPop = false;
+  var ignorePath = null;
+
+  function locationsAreEqual$$1(a, b) {
+    return a.pathname === b.pathname && a.search === b.search && a.hash === b.hash;
+  }
 
   function handleHashChange() {
-    let path = getHashPath();
-    let encodedPath = encodePath(path);
+    var path = getHashPath();
+    var encodedPath = encodePath(path);
 
     if (path !== encodedPath) {
       // Ensure we always have a properly-encoded hash.
       replaceHashPath(encodedPath);
     } else {
-      let location = getDOMLocation();
-      let prevLocation = history.location;
-      if (!forceNextPop && locationsAreEqual(prevLocation, location)) return; // A hashchange doesn't always == location change.
+      var location = getDOMLocation();
+      var prevLocation = history.location;
+      if (!forceNextPop && locationsAreEqual$$1(prevLocation, location)) return; // A hashchange doesn't always == location change.
 
       if (ignorePath === createPath(location)) return; // Ignore this change; we already setState in push/replace.
+
       ignorePath = null;
 
       if (allPaths.length && allPaths[allPaths.length - 1] !== path) allPaths.push(path);
-
+      
       handlePop(location);
     }
   }
@@ -586,12 +595,12 @@ function createHashHistory(props) {
       forceNextPop = false;
       setState();
     } else {
-      let action = 'POP';
+      var action = 'POP';
       transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
         if (ok) {
           setState({
-            action,
-            location
+            action: action,
+            location: location
           });
         } else {
           revertPop(location);
@@ -601,15 +610,15 @@ function createHashHistory(props) {
   }
 
   function revertPop(fromLocation) {
-    let toLocation = history.location; // TODO: We could probably make this more reliable by
+    var toLocation = history.location; // TODO: We could probably make this more reliable by
     // keeping a list of paths we've seen in sessionStorage.
     // Instead, we just default to 0 for paths we don't know.
 
-    let toIndex = allPaths.lastIndexOf(createPath(toLocation));
+    var toIndex = allPaths.lastIndexOf(createPath(toLocation));
     if (toIndex === -1) toIndex = 0;
-    let fromIndex = allPaths.lastIndexOf(createPath(fromLocation));
+    var fromIndex = allPaths.lastIndexOf(createPath(fromLocation));
     if (fromIndex === -1) fromIndex = 0;
-    let delta = toIndex - fromIndex;
+    var delta = toIndex - fromIndex;
 
     if (delta) {
       forceNextPop = true;
@@ -618,25 +627,32 @@ function createHashHistory(props) {
   } // Ensure the hash is encoded properly before doing anything else.
 
 
-  let path = getHashPath();
-  let encodedPath = encodePath(path);
+  var path = getHashPath();
+  var encodedPath = encodePath(path);
   if (path !== encodedPath) replaceHashPath(encodedPath);
-  let initialLocation = getDOMLocation();
+  var initialLocation = getDOMLocation();
   var allPaths = [createPath(initialLocation)]; // Public interface
 
   function createHref(location) {
-    return '#' + encodePath(basename + createPath(location));
+    var baseTag = document.querySelector('base');
+    var href = '';
+
+    if (baseTag && baseTag.getAttribute('href')) {
+      href = stripHash(window.location.href);
+    }
+
+    return href + '#' + encodePath(basename + createPath(location));
   }
 
   function push(path, state) {
-    process.env.NODE_ENV !== 'production' ? warning(state === undefined, 'Hash history cannot push state; it is ignored') : void 0;
-    let action = 'PUSH';
-    let location = createLocation(path, undefined, undefined, history.location);
+    process.env.NODE_ENV !== "production" ? warning(state === undefined, 'Hash history cannot push state; it is ignored') : void 0;
+    var action = 'PUSH';
+    var location = createLocation(path, undefined, undefined, history.location);
     transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
       if (!ok) return;
-      let path = createPath(location);
-      let encodedPath = encodePath(basename + path);
-      let hashChanged = getHashPath() !== encodedPath;
+      var path = createPath(location);
+      var encodedPath = encodePath(basename + path);
+      var hashChanged = getHashPath() !== encodedPath;
 
       if (hashChanged) {
         // We cannot tell if a hashchange was caused by a PUSH, so we'd
@@ -644,30 +660,30 @@ function createHashHistory(props) {
         // is that other hash histories in the page will consider it a POP.
         ignorePath = path;
         pushHashPath(encodedPath);
-        let prevIndex = allPaths.lastIndexOf(createPath(history.location));
-        let nextPaths = allPaths.slice(0, prevIndex === -1 ? 0 : prevIndex + 1);
+        var prevIndex = allPaths.lastIndexOf(createPath(history.location));
+        var nextPaths = allPaths.slice(0, prevIndex + 1);
         nextPaths.push(path);
         allPaths = nextPaths;
         setState({
-          action,
-          location
+          action: action,
+          location: location
         });
       } else {
-        process.env.NODE_ENV !== 'production' ? warning(false, 'Hash history cannot PUSH the same path; a new entry will not be added to the history stack') : void 0;
+        process.env.NODE_ENV !== "production" ? warning(false, 'Hash history cannot PUSH the same path; a new entry will not be added to the history stack') : void 0;
         setState();
       }
     });
   }
 
   function replace(path, state) {
-    process.env.NODE_ENV !== 'production' ? warning(state === undefined, 'Hash history cannot replace state; it is ignored') : void 0;
-    let action = 'REPLACE';
-    let location = createLocation(path, undefined, undefined, history.location);
+    process.env.NODE_ENV !== "production" ? warning(state === undefined, 'Hash history cannot replace state; it is ignored') : void 0;
+    var action = 'REPLACE';
+    var location = createLocation(path, undefined, undefined, history.location);
     transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
       if (!ok) return;
-      let path = createPath(location);
-      let encodedPath = encodePath(basename + path);
-      let hashChanged = getHashPath() !== encodedPath;
+      var path = createPath(location);
+      var encodedPath = encodePath(basename + path);
+      var hashChanged = getHashPath() !== encodedPath;
 
       if (hashChanged) {
         // We cannot tell if a hashchange was caused by a REPLACE, so we'd
@@ -677,17 +693,17 @@ function createHashHistory(props) {
         replaceHashPath(encodedPath);
       }
 
-      let prevIndex = allPaths.indexOf(createPath(history.location));
+      var prevIndex = allPaths.indexOf(createPath(history.location));
       if (prevIndex !== -1) allPaths[prevIndex] = path;
       setState({
-        action,
-        location
+        action: action,
+        location: location
       });
     });
   }
 
   function go(n) {
-    process.env.NODE_ENV !== 'production' ? warning(canGoWithoutReload, 'Hash history go(n) causes a full page reload in this browser') : void 0;
+    process.env.NODE_ENV !== "production" ? warning(canGoWithoutReload, 'Hash history go(n) causes a full page reload in this browser') : void 0;
     globalHistory.go(n);
   }
 
@@ -699,7 +715,7 @@ function createHashHistory(props) {
     go(1);
   }
 
-  let listenerCount = 0;
+  var listenerCount = 0;
 
   function checkDOMListeners(delta) {
     listenerCount += delta;
@@ -711,14 +727,14 @@ function createHashHistory(props) {
     }
   }
 
-  let isBlocked = false;
+  var isBlocked = false;
 
   function block(prompt) {
     if (prompt === void 0) {
       prompt = false;
     }
 
-    let unblock = transitionManager.setPrompt(prompt);
+    var unblock = transitionManager.setPrompt(prompt);
 
     if (!isBlocked) {
       checkDOMListeners(1);
@@ -736,7 +752,7 @@ function createHashHistory(props) {
   }
 
   function listen(listener) {
-    let unlisten = transitionManager.appendListener(listener);
+    var unlisten = transitionManager.appendListener(listener);
     checkDOMListeners(1);
     return function () {
       checkDOMListeners(-1);
@@ -748,14 +764,14 @@ function createHashHistory(props) {
     length: globalHistory.length,
     action: 'POP',
     location: initialLocation,
-    createHref,
-    push,
-    replace,
-    go,
-    goBack,
-    goForward,
-    block,
-    listen
+    createHref: createHref,
+    push: push,
+    replace: replace,
+    go: go,
+    goBack: goBack,
+    goForward: goForward,
+    block: block,
+    listen: listen
   };
   return history;
 }
@@ -773,15 +789,15 @@ function createMemoryHistory(props) {
     props = {};
   }
 
-  let _props = props;
-  let getUserConfirmation = _props.getUserConfirmation;
-  let _props$initialEntries = _props.initialEntries;
-  let initialEntries = _props$initialEntries === void 0 ? ['/'] : _props$initialEntries;
-  let _props$initialIndex = _props.initialIndex;
-  let initialIndex = _props$initialIndex === void 0 ? 0 : _props$initialIndex;
-  let _props$keyLength = _props.keyLength;
-  let keyLength = _props$keyLength === void 0 ? 6 : _props$keyLength;
-  let transitionManager = createTransitionManager();
+  var _props = props,
+      getUserConfirmation = _props.getUserConfirmation,
+      _props$initialEntries = _props.initialEntries,
+      initialEntries = _props$initialEntries === void 0 ? ['/'] : _props$initialEntries,
+      _props$initialIndex = _props.initialIndex,
+      initialIndex = _props$initialIndex === void 0 ? 0 : _props$initialIndex,
+      _props$keyLength = _props.keyLength,
+      keyLength = _props$keyLength === void 0 ? 6 : _props$keyLength;
+  var transitionManager = createTransitionManager();
 
   function setState(nextState) {
     _extends(history, nextState);
@@ -794,22 +810,22 @@ function createMemoryHistory(props) {
     return Math.random().toString(36).substr(2, keyLength);
   }
 
-  let index = clamp(initialIndex, 0, initialEntries.length - 1);
-  let entries = initialEntries.map(function (entry) {
+  var index = clamp(initialIndex, 0, initialEntries.length - 1);
+  var entries = initialEntries.map(function (entry) {
     return typeof entry === 'string' ? createLocation(entry, undefined, createKey()) : createLocation(entry, undefined, entry.key || createKey());
   }); // Public interface
 
-  let createHref = createPath;
+  var createHref = createPath;
 
   function push(path, state) {
-    process.env.NODE_ENV !== 'production' ? warning(!(typeof path === 'object' && path.state !== undefined && state !== undefined), 'You should avoid providing a 2nd state argument to push when the 1st ' + 'argument is a location-like object that already has state; it is ignored') : void 0;
-    let action = 'PUSH';
-    let location = createLocation(path, state, createKey(), history.location);
+    process.env.NODE_ENV !== "production" ? warning(!(typeof path === 'object' && path.state !== undefined && state !== undefined), 'You should avoid providing a 2nd state argument to push when the 1st ' + 'argument is a location-like object that already has state; it is ignored') : void 0;
+    var action = 'PUSH';
+    var location = createLocation(path, state, createKey(), history.location);
     transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
       if (!ok) return;
-      let prevIndex = history.index;
-      let nextIndex = prevIndex + 1;
-      let nextEntries = history.entries.slice(0);
+      var prevIndex = history.index;
+      var nextIndex = prevIndex + 1;
+      var nextEntries = history.entries.slice(0);
 
       if (nextEntries.length > nextIndex) {
         nextEntries.splice(nextIndex, nextEntries.length - nextIndex, location);
@@ -818,8 +834,8 @@ function createMemoryHistory(props) {
       }
 
       setState({
-        action,
-        location,
+        action: action,
+        location: location,
         index: nextIndex,
         entries: nextEntries
       });
@@ -827,28 +843,28 @@ function createMemoryHistory(props) {
   }
 
   function replace(path, state) {
-    process.env.NODE_ENV !== 'production' ? warning(!(typeof path === 'object' && path.state !== undefined && state !== undefined), 'You should avoid providing a 2nd state argument to replace when the 1st ' + 'argument is a location-like object that already has state; it is ignored') : void 0;
-    let action = 'REPLACE';
-    let location = createLocation(path, state, createKey(), history.location);
+    process.env.NODE_ENV !== "production" ? warning(!(typeof path === 'object' && path.state !== undefined && state !== undefined), 'You should avoid providing a 2nd state argument to replace when the 1st ' + 'argument is a location-like object that already has state; it is ignored') : void 0;
+    var action = 'REPLACE';
+    var location = createLocation(path, state, createKey(), history.location);
     transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
       if (!ok) return;
       history.entries[history.index] = location;
       setState({
-        action,
-        location
+        action: action,
+        location: location
       });
     });
   }
 
   function go(n) {
-    let nextIndex = clamp(history.index + n, 0, history.entries.length - 1);
-    let action = 'POP';
-    let location = history.entries[nextIndex];
+    var nextIndex = clamp(history.index + n, 0, history.entries.length - 1);
+    var action = 'POP';
+    var location = history.entries[nextIndex];
     transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
       if (ok) {
         setState({
-          action,
-          location,
+          action: action,
+          location: location,
           index: nextIndex
         });
       } else {
@@ -868,7 +884,7 @@ function createMemoryHistory(props) {
   }
 
   function canGo(n) {
-    let nextIndex = history.index + n;
+    var nextIndex = history.index + n;
     return nextIndex >= 0 && nextIndex < history.entries.length;
   }
 
@@ -888,17 +904,17 @@ function createMemoryHistory(props) {
     length: entries.length,
     action: 'POP',
     location: entries[index],
-    index,
-    entries,
-    createHref,
-    push,
-    replace,
-    go,
-    goBack,
-    goForward,
-    canGo,
-    block,
-    listen
+    index: index,
+    entries: entries,
+    createHref: createHref,
+    push: push,
+    replace: replace,
+    go: go,
+    goBack: goBack,
+    goForward: goForward,
+    canGo: canGo,
+    block: block,
+    listen: listen
   };
   return history;
 }

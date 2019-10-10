@@ -1,7 +1,4 @@
-import warning from 'tiny-warning';
-import invariant from 'tiny-invariant';
-
-import { createLocation, locationsAreEqual } from './LocationUtils';
+import { createLocation } from './LocationUtils.js';
 import {
   addLeadingSlash,
   stripLeadingSlash,
@@ -9,13 +6,15 @@ import {
   hasBasename,
   stripBasename,
   createPath
-} from './PathUtils';
-import createTransitionManager from './createTransitionManager';
+} from './PathUtils.js';
+import createTransitionManager from './createTransitionManager.js';
 import {
   canUseDOM,
   getConfirmation,
   supportsGoWithoutReloadUsingHash
-} from './DOMUtils';
+} from './DOMUtils.js';
+import invariant from './invariant.js';
+import warning from './warning.js';
 
 const HashChangeEvent = 'hashchange';
 
@@ -35,6 +34,11 @@ const HashPathCoders = {
   }
 };
 
+function stripHash(url) {
+  const hashIndex = url.indexOf('#');
+  return hashIndex === -1 ? url : url.slice(0, hashIndex);
+}
+
 function getHashPath() {
   // We can't use window.location.hash here because it's not
   // consistent across browsers - Firefox will pre-decode it!
@@ -48,10 +52,7 @@ function pushHashPath(path) {
 }
 
 function replaceHashPath(path) {
-  const hashIndex = window.location.href.indexOf('#');
-  window.location.replace(
-    window.location.href.slice(0, hashIndex >= 0 ? hashIndex : 0) + '#' + path
-  );
+  window.location.replace(stripHash(window.location.href) + '#' + path);
 }
 
 function createHashHistory(props = {}) {
@@ -95,6 +96,12 @@ function createHashHistory(props = {}) {
 
   let forceNextPop = false;
   let ignorePath = null;
+
+  function locationsAreEqual(a, b) {
+    return (
+      a.pathname === b.pathname && a.search === b.search && a.hash === b.hash
+    );
+  }
 
   function handleHashChange() {
     const path = getHashPath();
@@ -176,7 +183,12 @@ function createHashHistory(props = {}) {
   // Public interface
 
   function createHref(location) {
-    return '#' + encodePath(basename + createPath(location));
+    const baseTag = document.querySelector('base');
+    let href = '';
+    if (baseTag && baseTag.getAttribute('href')) {
+      href = stripHash(window.location.href);
+    }
+    return href + '#' + encodePath(basename + createPath(location));
   }
 
   function push(path, state) {
