@@ -11,12 +11,13 @@ import createTransitionManager from './createTransitionManager.js';
 import {
   canUseDOM,
   getConfirmation,
+  supportsHistory,
   supportsGoWithoutReloadUsingHash
 } from './DOMUtils.js';
 import invariant from './invariant.js';
 import warning from './warning.js';
 
-const HashChangeEvent = 'hashchange';
+const HashChangeEvent = supportsHistory() ? 'popstate' : 'hashchange';
 
 const HashPathCoders = {
   hashbang: {

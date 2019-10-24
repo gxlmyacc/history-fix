@@ -642,7 +642,7 @@
     return history;
   }
 
-  var HashChangeEvent$1 = 'hashchange';
+  var HashChangeEvent$1 = supportsHistory() ? 'popstate' : 'hashchange';
   var HashPathCoders = {
     hashbang: {
       encodePath: function encodePath(path) {
