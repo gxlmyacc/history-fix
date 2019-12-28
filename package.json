@@ -1,6 +1,6 @@
 {
   "name": "history-fix",
-  "version": "4.10.1",
+  "version": "4.10.2",
   "description": "Manage session history with JavaScript",
   "repository": "ReactTraining/history",
   "license": "MIT",
@@ -8,6 +8,7 @@
   "main": "index.js",
   "module": "esm/history.js",
   "unpkg": "umd/history.js",
+  "typings": "types/index.d.ts",
   "files": [
     "DOMUtils.js",
     "ExecutionEnvironment.js",
@@ -21,14 +22,14 @@
     "es",
     "esm",
     "umd",
-    "warnAboutDeprecatedCJSRequire.js"
+    "warnAboutDeprecatedCJSRequire.js",
+    "types"
   ],
   "sideEffects": false,
   "scripts": {
     "build": "rollup -c",
     "clean": "git clean -fdX .",
     "lint": "eslint modules",
-    "prepublishOnly": "yarn build",
     "test": "karma start --single-run"
   },
   "dependencies": {
